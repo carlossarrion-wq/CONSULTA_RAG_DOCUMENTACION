@@ -1,15 +1,34 @@
-# Consulta RAG con AWS Bedrock
+# Sistema de Análisis de Incidencias con RAG
 
-Sistema de consultas RAG (Retrieval-Augmented Generation) que permite realizar preguntas a Claude 3.5 Sonnet en AWS Bedrock incluyendo documentos de múltiples formatos como contexto.
+Sistema inteligente de análisis de incidencias técnicas que utiliza RAG (Retrieval-Augmented Generation) con AWS Bedrock, Claude Sonnet 4.5, Aurora PostgreSQL con pgvector, y S3 para proporcionar diagnósticos automáticos, identificación de causa raíz y recomendaciones basadas en histórico de incidencias similares.
 
-## 🚀 Características
+## 🚀 Características Principales
 
-- ✅ **Multi-modal**: Soporte para PDF, imágenes (JPG, PNG, GIF, WebP), Excel, Word y texto
-- ✅ **Dos modos de operación**: CLI local o Lambda con API Gateway
-- ✅ **Procesamiento inteligente**: Conversión automática de formatos no soportados nativamente
-- ✅ **Claude 3.5 Sonnet**: Modelo de última generación en AWS Bedrock
-- ✅ **Interfaz rica**: CLI con colores y formato Markdown
-- ✅ **Validación**: Verificación de archivos antes del procesamiento
+### Análisis Inteligente de Incidencias
+- ✅ **Búsqueda semántica** de incidencias similares en base de conocimiento
+- ✅ **Diagnóstico automático** basado en patrones históricos
+- ✅ **Identificación de causa raíz** con análisis contextual
+- ✅ **Recomendaciones de resolución** paso a paso
+- ✅ **Score de confianza** del análisis realizado
+
+### Arquitectura RAG Completa
+- ✅ **Knowledge Base** en AWS Bedrock con búsqueda vectorial
+- ✅ **Aurora PostgreSQL 15.4** con extensión pgvector (1024 dimensiones)
+- ✅ **Embeddings** con Amazon Titan v2
+- ✅ **Búsqueda híbrida**: Semántica (vectorial) + Keywords
+- ✅ **Claude Sonnet 4.5**: Modelo de última generación
+
+### Gestión de Documentos
+- ✅ **Multi-formato**: PDF, imágenes, Excel, Word, texto, logs
+- ✅ **Archivos adjuntos**: Almacenamiento en S3 con recuperación automática
+- ✅ **Metadata enriquecida**: Sincronización con Knowledge Base
+- ✅ **Procesamiento inteligente**: Conversión automática de formatos
+
+### API y Dashboard
+- ✅ **API REST** con autenticación y rate limiting
+- ✅ **Dashboard web interactivo** con visualizaciones en tiempo real
+- ✅ **Gráficos de historial**: Tiempos de respuesta y niveles de confianza
+- ✅ **Indicadores visuales**: Círculo de confianza con código de colores
 
 ## 📋 Requisitos
 
@@ -65,7 +84,65 @@ LOG_LEVEL=INFO
 
 ## 🎯 Uso
 
-### Opción 1: CLI Local (Recomendado para pruebas)
+### Dashboard Web Interactivo
+
+La forma más sencilla de usar el sistema es a través del dashboard web:
+
+```bash
+# Abrir el dashboard en el navegador
+open dashboard/index.html
+```
+
+El dashboard incluye:
+- 📊 **Métricas en tiempo real**: Consultas realizadas, confianza promedio, tiempos
+- 📝 **Formulario de consulta**: Describe la incidencia y obtén análisis instantáneo
+- 📈 **Gráficos de historial**: Visualiza tiempos de respuesta y niveles de confianza
+- 🎨 **Indicadores visuales**: Círculo de confianza con código de colores
+- 🔍 **Incidencias similares**: Ve casos históricos relacionados con badges de similitud
+
+### API REST - Análisis de Incidencias
+
+#### Endpoint Principal: `/analyze-incident`
+
+```bash
+# Analizar una incidencia
+curl -X POST https://your-api-url/dev/analyze-incident \
+  -H 'Content-Type: application/json' \
+  -H 'x-api-key: YOUR_API_KEY' \
+  -d '{
+    "incident_description": "El servidor web no responde en el puerto 443. Los usuarios reportan error de conexión SSL."
+  }'
+```
+
+**Respuesta**:
+```json
+{
+  "diagnosis": "Basado en el análisis de incidencias similares, el problema parece estar relacionado con un certificado SSL expirado...",
+  "root_cause": "Certificado SSL expirado en el servidor web principal",
+  "recommended_actions": [
+    "Verificar estado del certificado: openssl x509 -in cert.pem -noout -dates",
+    "Renovar certificado: certbot renew",
+    "Reiniciar servidor web: systemctl restart nginx"
+  ],
+  "confidence_score": 0.92,
+  "similar_incidents": [
+    {
+      "incident_id": "INC-2024-001",
+      "title": "Certificado SSL expirado",
+      "similarity_score": 0.95,
+      "description": "Servidor web principal no responde..."
+    }
+  ]
+}
+```
+
+#### Health Check
+
+```bash
+curl https://your-api-url/dev/health
+```
+
+### CLI Local (Para desarrollo y pruebas)
 
 #### Probar conexión con Bedrock
 
@@ -73,84 +150,30 @@ LOG_LEVEL=INFO
 python -m src.cli.main test
 ```
 
-#### Realizar una consulta simple
-
-```bash
-python -m src.cli.main query -p "¿Cuál es la capital de Francia?"
-```
-
 #### Consulta con documentos
 
 ```bash
 python -m src.cli.main query \
-  -p "Resume el contenido de estos documentos" \
-  -f documento.pdf \
-  -f imagen.jpg \
-  -f datos.xlsx
+  -p "Analiza este log de errores" \
+  -f error_log.txt \
+  -f screenshot.png
 ```
 
-#### Consulta con parámetros personalizados
+### Despliegue Completo
+
+Para desplegar toda la infraestructura (Aurora, Lambda, API Gateway, Knowledge Base):
 
 ```bash
-python -m src.cli.main query \
-  -p "Analiza estos datos" \
-  -f reporte.pdf \
-  --max-tokens 8000 \
-  --temperature 0.5 \
-  --verbose
+cd scripts
+./deploy-complete.sh
 ```
 
-#### Validar archivos antes de enviar
-
-```bash
-python -m src.cli.main validate documento.pdf imagen.jpg datos.xlsx
-```
-
-### Opción 2: Lambda con API Gateway
-
-#### Desplegar Lambda
-
-```bash
-cd infrastructure
-./deploy.sh
-```
-
-El script creará:
-- Función Lambda
-- API Gateway
-- Roles y permisos IAM
-- CloudWatch Logs
-
-#### Usar la API
-
-```bash
-# Health check
-curl https://your-api-url/prod/health
-
-# Consulta simple
-curl -X POST https://your-api-url/prod/query \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "prompt": "¿Cuál es la capital de España?",
-    "max_tokens": 4096,
-    "temperature": 0.7
-  }'
-
-# Consulta con documentos (documentos deben estar en base64)
-curl -X POST https://your-api-url/prod/query \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "prompt": "Resume este documento",
-    "documents": [
-      {
-        "file_name": "doc.pdf",
-        "document_type": "pdf",
-        "base64_content": "JVBERi0xLjQK...",
-        "mime_type": "application/pdf"
-      }
-    ]
-  }'
-```
+Este script automatiza:
+1. ✅ Despliegue de infraestructura con CloudFormation/SAM
+2. ✅ Inicialización de Aurora PostgreSQL con pgvector
+3. ✅ Creación de Knowledge Base en Bedrock
+4. ✅ Sincronización de datos de ejemplo
+5. ✅ Configuración de API Gateway con CORS
 
 ## 📁 Estructura del Proyecto
 
