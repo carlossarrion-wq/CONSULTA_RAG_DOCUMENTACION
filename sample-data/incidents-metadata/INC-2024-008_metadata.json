@@ -1,0 +1,25 @@
+{
+  "incident_id": "INC-2024-008",
+  "title": "Memoria insuficiente en Lambda",
+  "description": "Las funciones Lambda están fallando con error 'Task timed out after 3.00 seconds'. Los logs muestran 'Memory Size: 128 MB Max Memory Used: 127 MB'.",
+  "category": "Serverless",
+  "severity": "Medium",
+  "status": "Resolved",
+  "resolution": "Se aumentó la memoria de las funciones Lambda de 128MB a 512MB. Se optimizó el código para reducir el uso de memoria. Se implementó monitoreo de uso de memoria.",
+  "resolution_time": "1 hora",
+  "root_cause": "Configuración insuficiente de memoria en Lambda",
+  "created_at": "2024-03-05T13:00:00Z",
+  "resolved_at": "2024-03-05T14:00:00Z",
+  "attachments_metadata": [
+    {
+      "filename": "INC-2024-008_screenshot.png",
+      "type": "image",
+      "description": "Captura de pantalla del error"
+    },
+    {
+      "filename": "INC-2024-008_logs.txt",
+      "type": "text",
+      "description": "Logs del sistema durante el incidente"
+    }
+  ]
+}

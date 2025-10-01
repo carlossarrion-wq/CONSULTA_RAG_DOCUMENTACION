@@ -1,0 +1,25 @@
+{
+  "incident_id": "INC-2024-002",
+  "title": "Base de datos lenta",
+  "description": "Las consultas a la base de datos PostgreSQL están tardando más de 30 segundos. Los usuarios experimentan timeouts en la aplicación. El CPU del servidor de base de datos está al 95%.",
+  "category": "Database",
+  "severity": "High",
+  "status": "Resolved",
+  "resolution": "Se identificaron queries sin índices apropiados. Se crearon índices en las columnas user_id y created_at de la tabla transactions. Se ejecutó VACUUM ANALYZE para optimizar el plan de ejecución.",
+  "resolution_time": "2 horas",
+  "root_cause": "Falta de índices en tablas con alto volumen de datos",
+  "created_at": "2024-01-20T14:00:00Z",
+  "resolved_at": "2024-01-20T16:00:00Z",
+  "attachments_metadata": [
+    {
+      "filename": "INC-2024-002_screenshot.png",
+      "type": "image",
+      "description": "Captura de pantalla del error"
+    },
+    {
+      "filename": "INC-2024-002_logs.txt",
+      "type": "text",
+      "description": "Logs del sistema durante el incidente"
+    }
+  ]
+}

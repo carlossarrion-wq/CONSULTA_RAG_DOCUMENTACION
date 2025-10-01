@@ -1,0 +1,473 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Sistema de Análisis de Incidencias con RAG usando AWS Bedrock
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Entorno de despliegue
+  
+  BedrockModelId:
+    Type: String
+    Default: eu.anthropic.claude-sonnet-4-5-20250929-v1:0
+    Description: ID del modelo Claude en Bedrock
+  
+  AuroraDBName:
+    Type: String
+    Default: incidents_kb
+    Description: Nombre de la base de datos Aurora
+  
+  AuroraUsername:
+    Type: String
+    Default: admin
+    NoEcho: true
+    Description: Usuario administrador de Aurora
+  
+  AuroraPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 8
+    Description: Contraseña del administrador de Aurora
+  
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC donde se desplegará Aurora
+  
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets privadas para Aurora (mínimo 2)
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 300
+    MemorySize: 2048
+    Environment:
+      Variables:
+        LOG_LEVEL: INFO
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+
+Resources:
+  # ============================================
+  # S3 BUCKETS
+  # ============================================
+  
+  IncidentsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-incidents-${Environment}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 90
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Purpose
+          Value: IncidentStorage
+  
+  # ============================================
+  # AURORA POSTGRESQL CON PGVECTOR
+  # ============================================
+  
+  AuroraSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group para Aurora PostgreSQL
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-aurora-sg
+        - Key: Environment
+          Value: !Ref Environment
+  
+  AuroraDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group para Aurora
+      SubnetIds: !Ref PrivateSubnetIds
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-aurora-subnet-group
+  
+  AuroraDBCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: aurora-postgresql
+      EngineVersion: '17.4'
+      DatabaseName: !Ref AuroraDBName
+      MasterUsername: !Ref AuroraUsername
+      MasterUserPassword: !Ref AuroraPassword
+      DBSubnetGroupName: !Ref AuroraDBSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref AuroraSecurityGroup
+      BackupRetentionPeriod: 7
+      PreferredBackupWindow: 03:00-04:00
+      PreferredMaintenanceWindow: mon:04:00-mon:05:00
+      StorageEncrypted: true
+      EnableCloudwatchLogsExports:
+        - postgresql
+      EnableHttpEndpoint: true
+      ServerlessV2ScalingConfiguration:
+        MinCapacity: 0.5
+        MaxCapacity: 2
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-aurora-cluster
+        - Key: Environment
+          Value: !Ref Environment
+  
+  AuroraDBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: aurora-postgresql
+      DBClusterIdentifier: !Ref AuroraDBCluster
+      DBInstanceClass: db.serverless
+      PubliclyAccessible: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-aurora-instance
+  
+  # Secret para credenciales de Aurora
+  AuroraSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${AWS::StackName}-aurora-credentials
+      Description: Credenciales de Aurora PostgreSQL
+      SecretString: !Sub |
+        {
+          "username": "${AuroraUsername}",
+          "password": "${AuroraPassword}",
+          "host": "${AuroraDBCluster.Endpoint.Address}",
+          "port": ${AuroraDBCluster.Endpoint.Port},
+          "dbname": "${AuroraDBName}"
+        }
+  
+  # ============================================
+  # BEDROCK KNOWLEDGE BASE
+  # ============================================
+  
+  KnowledgeBaseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt IncidentsBucket.Arn
+                  - !Sub ${IncidentsBucket.Arn}/*
+        - PolicyName: RDSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds:DescribeDBClusters
+                  - rds:DescribeDBInstances
+                Resource: '*'
+        - PolicyName: RDSDataAPIAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds-data:ExecuteStatement
+                  - rds-data:BatchExecuteStatement
+                  - rds-data:BeginTransaction
+                  - rds-data:CommitTransaction
+                  - rds-data:RollbackTransaction
+                Resource: !GetAtt AuroraDBCluster.DBClusterArn
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref AuroraSecret
+  
+  # Nota: La Knowledge Base debe crearse manualmente o via AWS CLI
+  # ya que CloudFormation no soporta completamente Bedrock Knowledge Bases
+  # Ver scripts/create-knowledge-base.sh para automatización
+  
+  # ============================================
+  # LAMBDA FUNCTIONS
+  # ============================================
+  
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group para Lambda functions
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-lambda-sg
+  
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                  - bedrock:Retrieve
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - bedrock-agent-runtime:Retrieve
+                  - bedrock-agent-runtime:RetrieveAndGenerate
+                Resource: '*'
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt IncidentsBucket.Arn
+                  - !Sub ${IncidentsBucket.Arn}/*
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref AuroraSecret
+  
+  IncidentAnalyzerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-incident-analyzer
+      CodeUri: ../src/incident_analyzer/
+      Handler: lambda_handler.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          KNOWLEDGE_BASE_ID: !Sub '{{resolve:ssm:/${AWS::StackName}/knowledge-base-id}}'
+          S3_BUCKET: !Ref IncidentsBucket
+          AURORA_SECRET_ARN: !Ref AuroraSecret
+      Events:
+        AnalyzeIncident:
+          Type: Api
+          Properties:
+            Path: /analyze-incident
+            Method: POST
+            RestApiId: !Ref IncidentAnalyzerApi
+      Tags:
+        Environment: !Ref Environment
+  
+  HealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-health-check
+      CodeUri: ../src/incident_analyzer/
+      Handler: lambda_handler.health_check_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          KNOWLEDGE_BASE_ID: !Sub '{{resolve:ssm:/${AWS::StackName}/knowledge-base-id}}'
+          S3_BUCKET: !Ref IncidentsBucket
+      Events:
+        HealthCheck:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: GET
+            RestApiId: !Ref IncidentAnalyzerApi
+  
+  # ============================================
+  # API GATEWAY
+  # ============================================
+  
+  IncidentAnalyzerApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub ${AWS::StackName}-api
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'POST, GET, OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-api-key'"
+        AllowOrigin: "'*'"
+        MaxAge: "'600'"
+      Auth:
+        ApiKeyRequired: true
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-api-key'"
+              Access-Control-Allow-Methods: "'POST,GET,OPTIONS'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-api-key'"
+              Access-Control-Allow-Methods: "'POST,GET,OPTIONS'"
+      Tags:
+        Environment: !Ref Environment
+  
+  ApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn:
+      - IncidentAnalyzerApiStage
+    Properties:
+      Name: !Sub ${AWS::StackName}-api-key
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref IncidentAnalyzerApi
+          StageName: !Ref Environment
+  
+  UsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn:
+      - IncidentAnalyzerApiStage
+    Properties:
+      UsagePlanName: !Sub ${AWS::StackName}-usage-plan
+      ApiStages:
+        - ApiId: !Ref IncidentAnalyzerApi
+          Stage: !Ref Environment
+      Quota:
+        Limit: 10000
+        Period: MONTH
+      Throttle:
+        BurstLimit: 100
+        RateLimit: 50
+  
+  UsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+  
+  # ============================================
+  # CLOUDWATCH ALARMS
+  # ============================================
+  
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-lambda-errors
+      AlarmDescription: Alerta cuando hay errores en Lambda
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref IncidentAnalyzerFunction
+  
+  ApiGateway5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-api-5xx-errors
+      AlarmDescription: Alerta cuando hay errores 5xx en API Gateway
+      MetricName: 5XXError
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub ${AWS::StackName}-api
+
+Outputs:
+  ApiEndpoint:
+    Description: URL del API Gateway
+    Value: !Sub https://${IncidentAnalyzerApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+    Export:
+      Name: !Sub ${AWS::StackName}-api-endpoint
+  
+  ApiKeyId:
+    Description: ID de la API Key
+    Value: !Ref ApiKey
+    Export:
+      Name: !Sub ${AWS::StackName}-api-key-id
+  
+  S3BucketName:
+    Description: Nombre del bucket S3
+    Value: !Ref IncidentsBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-s3-bucket
+  
+  AuroraClusterEndpoint:
+    Description: Endpoint del cluster Aurora
+    Value: !GetAtt AuroraDBCluster.Endpoint.Address
+    Export:
+      Name: !Sub ${AWS::StackName}-aurora-endpoint
+  
+  AuroraSecretArn:
+    Description: ARN del secret con credenciales de Aurora
+    Value: !Ref AuroraSecret
+    Export:
+      Name: !Sub ${AWS::StackName}-aurora-secret
+  
+  LambdaFunctionArn:
+    Description: ARN de la función Lambda
+    Value: !GetAtt IncidentAnalyzerFunction.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-lambda-arn

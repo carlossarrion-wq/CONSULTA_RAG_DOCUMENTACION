@@ -1,0 +1,25 @@
+{
+  "incident_id": "INC-2024-003",
+  "title": "Disco lleno en servidor de logs",
+  "description": "El servidor de logs (log-server-01) tiene el disco al 98% de capacidad. Los servicios están fallando al intentar escribir logs. Alerta de CloudWatch activada.",
+  "category": "Infrastructure",
+  "severity": "High",
+  "status": "Resolved",
+  "resolution": "Se implementó rotación automática de logs con logrotate. Se configuró compresión de logs antiguos y eliminación de logs mayores a 30 días. Se aumentó el tamaño del disco de 100GB a 200GB.",
+  "resolution_time": "1 hora",
+  "root_cause": "Falta de política de rotación de logs",
+  "created_at": "2024-02-01T09:00:00Z",
+  "resolved_at": "2024-02-01T10:00:00Z",
+  "attachments_metadata": [
+    {
+      "filename": "INC-2024-003_screenshot.png",
+      "type": "image",
+      "description": "Captura de pantalla del error"
+    },
+    {
+      "filename": "INC-2024-003_logs.txt",
+      "type": "text",
+      "description": "Logs del sistema durante el incidente"
+    }
+  ]
+}

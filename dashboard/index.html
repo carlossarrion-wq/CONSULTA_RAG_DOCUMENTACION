@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Análisis de Incidencias</title>
+    
+    <!-- AWS Amazon Ember Font -->
+    <link rel="preconnect" href="https://d1tzzh0q3mh5bp.cloudfront.net">
+    <link href="https://d1tzzh0q3mh5bp.cloudfront.net/fonts/amazon-ember/amazon-ember.css" rel="stylesheet">
+    
+    <style>
+        /* Modern Clean Dashboard Styles - Based on AWS Bedrock Dashboard */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Amazon Ember', 'Helvetica Neue', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            min-height: 100vh;
+            color: #2d3748;
+        }
+
+        /* Header Section */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #319795 0%, #2c7a7b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 400;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .connection-status.connected {
+            background: rgba(49, 151, 149, 0.9);
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background: rgba(229, 62, 62, 0.9);
+            color: white;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-card h3 {
+            font-size: 1.1rem;
+            color: #718096;
+            margin-bottom: 1rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #319795 0%, #2c7a7b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-subtitle {
+            color: #a0aec0;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 2rem;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            font-size: 1.35rem;
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: #2d3748;
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #319795;
+            box-shadow: 0 0 0 3px rgba(49, 151, 149, 0.1);
+        }
+
+        /* Examples Section */
+        .examples {
+            background: rgba(49, 151, 149, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .examples h4 {
+            color: #319795;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .example-item {
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 0;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            color: #2d3748;
+        }
+
+        .example-item:hover {
+            background: linear-gradient(135deg, #319795 0%, #2c7a7b 100%);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 400;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #319795 0%, #2c7a7b 100%);
+            color: white;
+            flex: 1;
+            box-shadow: 0 4px 15px rgba(49, 151, 149, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(49, 151, 149, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(49, 151, 149, 0.1);
+            color: #319795;
+            border: 2px solid rgba(49, 151, 149, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(49, 151, 149, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(49, 151, 149, 0.3);
+            border-top: 4px solid #319795;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            color: #718096;
+            font-size: 1rem;
+        }
+
+        /* Results Section */
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .result-section {
+            background: rgba(49, 151, 149, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #319795;
+        }
+
+        .result-section h3 {
+            color: #319795;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .result-section p,
+        .result-section ul {
+            color: #2d3748;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        .result-section ul {
+            list-style-position: inside;
+            padding-left: 1rem;
+        }
+
+        .result-section li {
+            margin-bottom: 0.75rem;
+        }
+
+        /* Confidence Circle */
+        .confidence-circle-container {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            width: 100px;
+            height: 100px;
+        }
+
+        .confidence-circle {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .confidence-circle-bg {
+            fill: none;
+            stroke: rgba(0, 0, 0, 0.1);
+            stroke-width: 8;
+        }
+
+        .confidence-circle-progress {
+            fill: none;
+            stroke: #a5d6a7;
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+            transition: stroke-dashoffset 1s ease-out, stroke 0.5s ease;
+        }
+
+        .confidence-circle-progress.low {
+            stroke: #ef9a9a !important;
+        }
+
+        .confidence-circle-progress.medium {
+            stroke: #ffcc80 !important;
+        }
+
+        .confidence-circle-progress.high {
+            stroke: #a5d6a7 !important;
+        }
+
+        .confidence-text-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .confidence-percentage {
+            font-size: 1.5rem;
+            font-weight: 600;
+            line-height: 1;
+            transition: color 0.5s ease;
+        }
+
+        .confidence-percentage.low {
+            color: #e57373;
+        }
+
+        .confidence-percentage.medium {
+            color: #ffb74d;
+        }
+
+        .confidence-percentage.high {
+            color: #81c784;
+        }
+
+        .confidence-label {
+            font-size: 0.65rem;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.25rem;
+        }
+
+        /* Similar Incidents */
+        .similar-incidents {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .incident-card {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .incident-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .incident-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .incident-id {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.9rem;
+        }
+
+        .similarity-badge {
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: background 0.3s ease;
+        }
+
+        .similarity-badge.low {
+            background: linear-gradient(135deg, #ef9a9a 0%, #e57373 100%);
+        }
+
+        .similarity-badge.medium {
+            background: linear-gradient(135deg, #ffcc80 0%, #ffb74d 100%);
+        }
+
+        .similarity-badge.high {
+            background: linear-gradient(135deg, #a5d6a7 0%, #81c784 100%);
+        }
+
+        .incident-description {
+            color: #718096;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .incident-description strong {
+            color: #2d3748;
+        }
+
+        /* Error Messages */
+        .error {
+            display: none;
+            background: rgba(229, 62, 62, 0.1);
+            color: #c53030;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        /* Icons */
+        .icon {
+            font-size: 1.2rem;
+        }
+
+        /* Charts Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-container h3 {
+            color: #2d3748;
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        .chart-svg {
+            width: 100%;
+            height: 250px;
+            background: rgba(49, 151, 149, 0.02);
+            border-radius: 12px;
+        }
+
+        .chart-line {
+            fill: none;
+            stroke: #319795;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .chart-dot {
+            fill: #319795;
+            transition: r 0.2s ease;
+        }
+
+        .chart-dot:hover {
+            r: 6;
+            fill: #2c7a7b;
+        }
+
+        .chart-grid-line {
+            stroke: rgba(0, 0, 0, 0.1);
+            stroke-width: 1;
+            stroke-dasharray: 4;
+        }
+
+        .chart-axis {
+            stroke: rgba(0, 0, 0, 0.2);
+            stroke-width: 2;
+        }
+
+        .chart-label {
+            fill: #718096;
+            font-size: 12px;
+            font-family: 'Amazon Ember', sans-serif;
+        }
+
+        .chart-value {
+            fill: #2d3748;
+            font-size: 11px;
+            font-weight: 500;
+            font-family: 'Amazon Ember', sans-serif;
+        }
+
+        .no-data-message {
+            text-align: center;
+            color: #718096;
+            padding: 3rem;
+            font-size: 1rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .metric-value {
+                font-size: 2rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Connection Status Indicator -->
+    <div id="connection-status" class="connection-status connected">
+        🟢 Servicio Activo
+    </div>
+
+    <div class="header">
+        <h1>Dashboard de Análisis de Incidencias</h1>
+        <p>Sistema RAG con AWS Bedrock</p>
+    </div>
+
+    <div class="container">
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="metric-card">
+                <h3>Consultas Realizadas</h3>
+                <div class="metric-value" id="totalQueries">0</div>
+                <div class="metric-subtitle">Total de análisis</div>
+            </div>
+            <div class="metric-card">
+                <h3>Última Confianza</h3>
+                <div class="metric-value" id="lastConfidence">-</div>
+                <div class="metric-subtitle">Score del último análisis</div>
+            </div>
+            <div class="metric-card">
+                <h3>Tiempo Promedio</h3>
+                <div class="metric-value" id="avgTime">-</div>
+                <div class="metric-subtitle">Tiempo de respuesta</div>
+            </div>
+            <div class="metric-card">
+                <h3>Estado del Servicio</h3>
+                <div class="metric-value" id="serviceStatus">🟢</div>
+                <div class="metric-subtitle">API Gateway</div>
+            </div>
+        </div>
+
+        <!-- Query Form -->
+        <div class="card">
+            <h2>Nueva Consulta de Incidencia</h2>
+            
+            <div style="display: grid; grid-template-columns: 70% 30%; gap: 1.5rem;">
+                <div>
+                    <div class="form-group">
+                        <label for="incidentDescription">Descripción de la Incidencia</label>
+                        <textarea 
+                            id="incidentDescription" 
+                            rows="10" 
+                            placeholder="Describe la incidencia que deseas analizar. Por ejemplo: 'El servidor web no responde y los usuarios no pueden acceder a la aplicación...'"
+                        ></textarea>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="analyzeIncident()" id="analyzeBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                            </svg>
+                            Analizar Incidencia
+                        </button>
+                        <button class="btn-secondary" onclick="clearForm()">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                            </svg>
+                            Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="examples">
+                    <h4>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+                        </svg>
+                        Ejemplos de consultas (haz clic para usar):
+                    </h4>
+                    <div class="example-item" onclick="useExample(0)">
+                        Error de conexión a base de datos en producción
+                    </div>
+                    <div class="example-item" onclick="useExample(1)">
+                        Alto consumo de CPU en servidor de aplicaciones
+                    </div>
+                    <div class="example-item" onclick="useExample(2)">
+                        Fallos intermitentes en el servicio de autenticación
+                    </div>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <p>Analizando incidencia...</p>
+            </div>
+
+            <div class="error" id="error"></div>
+        </div>
+
+        <!-- Results -->
+        <div class="card results" id="results" style="position: relative;">
+            <h2>Resultados del Análisis</h2>
+            
+            <!-- Confidence Circle -->
+            <div class="confidence-circle-container">
+                <svg class="confidence-circle" viewBox="0 0 100 100">
+                    <circle class="confidence-circle-bg" cx="50" cy="50" r="45"></circle>
+                    <circle class="confidence-circle-progress" id="confidenceCircle" cx="50" cy="50" r="45"></circle>
+                </svg>
+                <div class="confidence-text-container">
+                    <div class="confidence-percentage" id="confidencePercentage">0%</div>
+                    <div class="confidence-label">Confianza</div>
+                </div>
+            </div>
+            
+            <div class="result-section">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
+                    </svg>
+                    Diagnóstico
+                </h3>
+                <p id="diagnosis"></p>
+            </div>
+
+            <div class="result-section">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                    </svg>
+                    Causa Raíz
+                </h3>
+                <p id="rootCause"></p>
+            </div>
+
+            <div class="result-section">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Acciones Recomendadas
+                </h3>
+                <ul id="actions"></ul>
+            </div>
+
+            <div class="result-section">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                    </svg>
+                    Incidencias Similares Encontradas
+                </h3>
+                <div class="similar-incidents" id="similarIncidents"></div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-grid" id="chartsSection" style="display: none;">
+            <div class="chart-container">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 8px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Historial de Tiempos de Respuesta
+                </h3>
+                <svg id="responseTimeChart" class="chart-svg"></svg>
+            </div>
+            
+            <div class="chart-container">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 8px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                    </svg>
+                    Historial de Niveles de Confianza
+                </h3>
+                <svg id="confidenceChart" class="chart-svg"></svg>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración del API
+        const API_CONFIG = {
+            endpoint: 'https://k1n3got8n7.execute-api.eu-west-1.amazonaws.com/dev/analyze-incident',
+            apiKey: 'ZVITNxyrLA24lBvrwQk6da2McY75iZKg7r6Tqv8y'
+        };
+
+        // Estadísticas
+        let stats = {
+            totalQueries: 0,
+            totalTime: 0,
+            lastConfidence: null
+        };
+
+        // Historial de peticiones (últimas 10)
+        const MAX_HISTORY = 10;
+        let queryHistory = {
+            responseTimes: [],
+            confidenceLevels: []
+        };
+
+        // Ejemplos de incidencias
+        const examples = [
+            "El servidor de base de datos PostgreSQL está mostrando errores de conexión. Los usuarios reportan que no pueden acceder a la aplicación y reciben mensajes de timeout. El log muestra 'connection refused' repetidamente.",
+            "El servidor de aplicaciones está experimentando un consumo de CPU del 95% constante. La aplicación se vuelve muy lenta y algunos procesos se quedan colgados. El uso de memoria también está aumentando gradualmente.",
+            "El servicio de autenticación OAuth está fallando intermitentemente. Algunos usuarios pueden iniciar sesión correctamente mientras que otros reciben errores 500. Los logs muestran excepciones relacionadas con tokens expirados."
+        ];
+
+        function useExample(index) {
+            document.getElementById('incidentDescription').value = examples[index];
+        }
+
+        function clearForm() {
+            document.getElementById('incidentDescription').value = '';
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('error').classList.remove('active');
+        }
+
+        async function analyzeIncident() {
+            const description = document.getElementById('incidentDescription').value.trim();
+            
+            if (!description) {
+                showError('Por favor, ingresa una descripción de la incidencia.');
+                return;
+            }
+
+            // UI updates
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('error').classList.remove('active');
+
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch(API_CONFIG.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': API_CONFIG.apiKey
+                    },
+                    body: JSON.stringify({
+                        incident_description: description
+                    })
+                });
+
+                const endTime = Date.now();
+                const duration = ((endTime - startTime) / 1000).toFixed(2);
+
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                // Update stats
+                stats.totalQueries++;
+                stats.totalTime += parseFloat(duration);
+                stats.lastConfidence = data.confidence_score;
+                updateStats(duration);
+
+                // Display results
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Error al analizar la incidencia: ${error.message}`);
+            } finally {
+                document.getElementById('analyzeBtn').disabled = false;
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        function displayResults(data) {
+            // Diagnosis
+            document.getElementById('diagnosis').textContent = data.diagnosis;
+            
+            // Root Cause
+            document.getElementById('rootCause').textContent = data.root_cause;
+            
+            // Actions
+            const actionsList = document.getElementById('actions');
+            actionsList.innerHTML = '';
+            data.recommended_actions.forEach(action => {
+                const li = document.createElement('li');
+                li.textContent = action;
+                actionsList.appendChild(li);
+            });
+            
+            // Confidence Circle
+            const confidencePercent = Math.round(data.confidence_score * 100);
+            const circumference = 2 * Math.PI * 45; // radius = 45
+            const offset = circumference - (confidencePercent / 100) * circumference;
+            
+            // Determine color class based on percentage
+            let colorClass = 'low';
+            if (confidencePercent >= 70) {
+                colorClass = 'high';
+            } else if (confidencePercent >= 40) {
+                colorClass = 'medium';
+            }
+            
+            // Determine stroke color based on percentage
+            let strokeColor = '#ef9a9a'; // red
+            if (confidencePercent >= 70) {
+                strokeColor = '#a5d6a7'; // green
+            } else if (confidencePercent >= 40) {
+                strokeColor = '#ffcc80'; // amber
+            }
+            
+            // Determine text color based on percentage
+            let textColor = '#e57373'; // red
+            if (confidencePercent >= 70) {
+                textColor = '#81c784'; // green
+            } else if (confidencePercent >= 40) {
+                textColor = '#ffb74d'; // amber
+            }
+            
+            // Update circle
+            const circleElement = document.getElementById('confidenceCircle');
+            circleElement.style.strokeDashoffset = offset;
+            circleElement.style.stroke = strokeColor;
+            
+            // Update percentage text
+            const percentageElement = document.getElementById('confidencePercentage');
+            percentageElement.textContent = confidencePercent + '%';
+            percentageElement.style.color = textColor;
+            
+            // Similar Incidents
+            const similarContainer = document.getElementById('similarIncidents');
+            similarContainer.innerHTML = '';
+            
+            if (data.similar_incidents && data.similar_incidents.length > 0) {
+                data.similar_incidents.forEach(incident => {
+                    const card = document.createElement('div');
+                    card.className = 'incident-card';
+                    
+                    const similarityPercent = Math.round(incident.similarity_score * 100);
+                    
+                    // Determine similarity color class
+                    let similarityClass = 'low';
+                    if (similarityPercent >= 70) {
+                        similarityClass = 'high';
+                    } else if (similarityPercent >= 40) {
+                        similarityClass = 'medium';
+                    }
+                    
+                    // Parse description if it's JSON
+                    let description = incident.description;
+                    let incidentId = incident.incident_id;
+                    let title = incident.title;
+                    
+                    try {
+                        const parsed = JSON.parse(description);
+                        incidentId = parsed.incident_id || incidentId;
+                        title = parsed.title || title;
+                        description = parsed.description || description;
+                    } catch (e) {
+                        // Keep original values if not JSON
+                    }
+                    
+                    card.innerHTML = `
+                        <div class="incident-header">
+                            <span class="incident-id">${incidentId}</span>
+                            <span class="similarity-badge ${similarityClass}">${similarityPercent}% similar</span>
+                        </div>
+                        <div class="incident-description"><strong>${title}:</strong> ${description}</div>
+                    `;
+                    
+                    similarContainer.appendChild(card);
+                });
+            } else {
+                similarContainer.innerHTML = '<p style="color: #718096;">No se encontraron incidencias similares.</p>';
+            }
+            
+            document.getElementById('results').classList.add('active');
+        }
+
+        function updateStats(duration) {
+            document.getElementById('totalQueries').textContent = stats.totalQueries;
+            document.getElementById('lastConfidence').textContent = 
+                stats.lastConfidence ? Math.round(stats.lastConfidence * 100) + '%' : '-';
+            document.getElementById('avgTime').textContent = 
+                (stats.totalTime / stats.totalQueries).toFixed(2) + 's';
+            
+            // Add to history
+            queryHistory.responseTimes.push(parseFloat(duration));
+            queryHistory.confidenceLevels.push(Math.round(stats.lastConfidence * 100));
+            
+            // Keep only last MAX_HISTORY items
+            if (queryHistory.responseTimes.length > MAX_HISTORY) {
+                queryHistory.responseTimes.shift();
+                queryHistory.confidenceLevels.shift();
+            }
+            
+            // Show charts section and update charts
+            document.getElementById('chartsSection').style.display = 'grid';
+            drawResponseTimeChart();
+            drawConfidenceChart();
+        }
+
+        function drawResponseTimeChart() {
+            const svg = document.getElementById('responseTimeChart');
+            const data = queryHistory.responseTimes;
+            
+            if (data.length === 0) return;
+            
+            // Clear previous content
+            svg.innerHTML = '';
+            
+            // SVG dimensions
+            const width = svg.clientWidth;
+            const height = 250;
+            const padding = { top: 20, right: 30, bottom: 40, left: 50 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+            
+            // Calculate scales
+            const maxValue = Math.max(...data);
+            const minValue = Math.min(...data);
+            const valueRange = maxValue - minValue || 1;
+            
+            // Draw grid lines
+            const gridLines = 5;
+            for (let i = 0; i <= gridLines; i++) {
+                const y = padding.top + (chartHeight / gridLines) * i;
+                const value = maxValue - (valueRange / gridLines) * i;
+                
+                // Grid line
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding.left);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', padding.left + chartWidth);
+                line.setAttribute('y2', y);
+                line.setAttribute('class', 'chart-grid-line');
+                svg.appendChild(line);
+                
+                // Y-axis label
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding.left - 10);
+                text.setAttribute('y', y + 4);
+                text.setAttribute('text-anchor', 'end');
+                text.setAttribute('class', 'chart-label');
+                text.textContent = value.toFixed(1) + 's';
+                svg.appendChild(text);
+            }
+            
+            // Draw axes
+            const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            xAxis.setAttribute('x1', padding.left);
+            xAxis.setAttribute('y1', padding.top + chartHeight);
+            xAxis.setAttribute('x2', padding.left + chartWidth);
+            xAxis.setAttribute('y2', padding.top + chartHeight);
+            xAxis.setAttribute('class', 'chart-axis');
+            svg.appendChild(xAxis);
+            
+            const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            yAxis.setAttribute('x1', padding.left);
+            yAxis.setAttribute('y1', padding.top);
+            yAxis.setAttribute('x2', padding.left);
+            yAxis.setAttribute('y2', padding.top + chartHeight);
+            yAxis.setAttribute('class', 'chart-axis');
+            svg.appendChild(yAxis);
+            
+            // Draw line and dots
+            const points = data.map((value, index) => {
+                const x = padding.left + (chartWidth / (data.length - 1 || 1)) * index;
+                const y = padding.top + chartHeight - ((value - minValue) / valueRange) * chartHeight;
+                return { x, y, value };
+            });
+            
+            // Draw line
+            if (points.length > 1) {
+                const pathData = points.map((p, i) => 
+                    `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+                ).join(' ');
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                path.setAttribute('class', 'chart-line');
+                svg.appendChild(path);
+            }
+            
+            // Draw dots
+            points.forEach((point, index) => {
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', point.x);
+                circle.setAttribute('cy', point.y);
+                circle.setAttribute('r', 4);
+                circle.setAttribute('class', 'chart-dot');
+                
+                // Add tooltip
+                const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                title.textContent = `Consulta ${index + 1}: ${point.value.toFixed(2)}s`;
+                circle.appendChild(title);
+                
+                svg.appendChild(circle);
+                
+                // X-axis label
+                if (data.length <= 10) {
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', point.x);
+                    text.setAttribute('y', padding.top + chartHeight + 20);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('class', 'chart-label');
+                    text.textContent = index + 1;
+                    svg.appendChild(text);
+                }
+            });
+        }
+
+        function drawConfidenceChart() {
+            const svg = document.getElementById('confidenceChart');
+            const data = queryHistory.confidenceLevels;
+            
+            if (data.length === 0) return;
+            
+            // Clear previous content
+            svg.innerHTML = '';
+            
+            // SVG dimensions
+            const width = svg.clientWidth;
+            const height = 250;
+            const padding = { top: 20, right: 30, bottom: 40, left: 50 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+            
+            // Fixed scale for confidence (0-100%)
+            const maxValue = 100;
+            const minValue = 0;
+            const valueRange = 100;
+            
+            // Draw grid lines
+            const gridLines = 5;
+            for (let i = 0; i <= gridLines; i++) {
+                const y = padding.top + (chartHeight / gridLines) * i;
+                const value = maxValue - (valueRange / gridLines) * i;
+                
+                // Grid line
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding.left);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', padding.left + chartWidth);
+                line.setAttribute('y2', y);
+                line.setAttribute('class', 'chart-grid-line');
+                svg.appendChild(line);
+                
+                // Y-axis label
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding.left - 10);
+                text.setAttribute('y', y + 4);
+                text.setAttribute('text-anchor', 'end');
+                text.setAttribute('class', 'chart-label');
+                text.textContent = value + '%';
+                svg.appendChild(text);
+            }
+            
+            // Draw axes
+            const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            xAxis.setAttribute('x1', padding.left);
+            xAxis.setAttribute('y1', padding.top + chartHeight);
+            xAxis.setAttribute('x2', padding.left + chartWidth);
+            xAxis.setAttribute('y2', padding.top + chartHeight);
+            xAxis.setAttribute('class', 'chart-axis');
+            svg.appendChild(xAxis);
+            
+            const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            yAxis.setAttribute('x1', padding.left);
+            yAxis.setAttribute('y1', padding.top);
+            yAxis.setAttribute('x2', padding.left);
+            yAxis.setAttribute('y2', padding.top + chartHeight);
+            yAxis.setAttribute('class', 'chart-axis');
+            svg.appendChild(yAxis);
+            
+            // Draw line and dots
+            const points = data.map((value, index) => {
+                const x = padding.left + (chartWidth / (data.length - 1 || 1)) * index;
+                const y = padding.top + chartHeight - ((value - minValue) / valueRange) * chartHeight;
+                return { x, y, value };
+            });
+            
+            // Draw line
+            if (points.length > 1) {
+                const pathData = points.map((p, i) => 
+                    `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+                ).join(' ');
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                path.setAttribute('class', 'chart-line');
+                svg.appendChild(path);
+            }
+            
+            // Draw dots
+            points.forEach((point, index) => {
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', point.x);
+                circle.setAttribute('cy', point.y);
+                circle.setAttribute('r', 4);
+                circle.setAttribute('class', 'chart-dot');
+                
+                // Add tooltip
+                const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                title.textContent = `Consulta ${index + 1}: ${point.value}%`;
+                circle.appendChild(title);
+                
+                svg.appendChild(circle);
+                
+                // X-axis label
+                if (data.length <= 10) {
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', point.x);
+                    text.setAttribute('y', padding.top + chartHeight + 20);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('class', 'chart-label');
+                    text.textContent = index + 1;
+                    svg.appendChild(text);
+                }
+            });
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+        }
+
+        // Check service status on load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch(API_CONFIG.endpoint.replace('/analyze-incident', '/health'), {
+                    headers: {
+                        'x-api-key': API_CONFIG.apiKey
+                    }
+                });
+                
+                if (response.ok) {
+                    document.getElementById('serviceStatus').textContent = '🟢';
+                    document.getElementById('connection-status').textContent = '🟢 Servicio Activo';
+                    document.getElementById('connection-status').className = 'connection-status connected';
+                } else {
+                    document.getElementById('serviceStatus').textContent = '🔴';
+                    document.getElementById('connection-status').textContent = '🔴 Servicio Inactivo';
+                    document.getElementById('connection-status').className = 'connection-status disconnected';
+                }
+            } catch (error) {
+                document.getElementById('serviceStatus').textContent = '🔴';
+                document.getElementById('connection-status').textContent = '🔴 Error de Conexión';
+                document.getElementById('connection-status').className = 'connection-status disconnected';
+            }
+        });
+    </script>
+</body>
+</html>

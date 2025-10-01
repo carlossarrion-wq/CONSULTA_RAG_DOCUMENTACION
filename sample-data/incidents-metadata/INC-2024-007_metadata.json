@@ -1,0 +1,25 @@
+{
+  "incident_id": "INC-2024-007",
+  "title": "Servicio de email no envía mensajes",
+  "description": "El servicio de email (SES) no está enviando correos. Los usuarios no reciben notificaciones. La cola de mensajes tiene 5000 emails pendientes.",
+  "category": "Application",
+  "severity": "Medium",
+  "status": "Resolved",
+  "resolution": "Se identificó que la cuenta de SES estaba en sandbox mode con límite de 200 emails/día. Se solicitó salida de sandbox. Se implementó sistema de reintentos con backoff exponencial.",
+  "resolution_time": "4 horas",
+  "root_cause": "Límites de SES en modo sandbox",
+  "created_at": "2024-03-01T10:00:00Z",
+  "resolved_at": "2024-03-01T14:00:00Z",
+  "attachments_metadata": [
+    {
+      "filename": "INC-2024-007_screenshot.png",
+      "type": "image",
+      "description": "Captura de pantalla del error"
+    },
+    {
+      "filename": "INC-2024-007_logs.txt",
+      "type": "text",
+      "description": "Logs del sistema durante el incidente"
+    }
+  ]
+}

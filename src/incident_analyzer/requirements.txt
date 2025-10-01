@@ -1,0 +1,8 @@
+# Requirements para el módulo de análisis de incidencias
+
+# AWS SDK
+boto3>=1.34.0
+botocore>=1.34.0
+
+# Utilidades
+python-dotenv>=1.0.0

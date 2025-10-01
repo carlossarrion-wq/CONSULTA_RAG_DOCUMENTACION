@@ -1,0 +1,25 @@
+{
+  "incident_id": "INC-2024-005",
+  "title": "API Gateway con alta latencia",
+  "description": "El API Gateway está respondiendo con latencias superiores a 5 segundos. Los clientes reportan timeouts. El dashboard muestra un incremento del 300% en el tiempo de respuesta.",
+  "category": "Application",
+  "severity": "High",
+  "status": "Resolved",
+  "resolution": "Se identificó un endpoint sin caché que estaba haciendo múltiples llamadas a servicios externos. Se implementó caché de Redis con TTL de 5 minutos. Se optimizaron las queries agregando paginación.",
+  "resolution_time": "3 horas",
+  "root_cause": "Falta de caché en endpoints de alta demanda",
+  "created_at": "2024-02-15T11:00:00Z",
+  "resolved_at": "2024-02-15T14:00:00Z",
+  "attachments_metadata": [
+    {
+      "filename": "INC-2024-005_screenshot.png",
+      "type": "image",
+      "description": "Captura de pantalla del error"
+    },
+    {
+      "filename": "INC-2024-005_logs.txt",
+      "type": "text",
+      "description": "Logs del sistema durante el incidente"
+    }
+  ]
+}

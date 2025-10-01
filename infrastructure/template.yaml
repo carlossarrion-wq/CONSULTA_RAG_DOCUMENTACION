@@ -1,0 +1,148 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Consulta RAG con AWS Bedrock
+  
+  Función Lambda para realizar consultas a Claude en Bedrock con documentos adjuntos
+
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 1024
+    Runtime: python3.11
+    Environment:
+      Variables:
+        AWS_REGION: eu-west-1
+        BEDROCK_MODEL_ID: eu.anthropic.claude-sonnet-4-5-20250929-v1:0
+        BEDROCK_MAX_TOKENS: 4096
+        BEDROCK_TEMPERATURE: 0.7
+        LOG_LEVEL: INFO
+
+Resources:
+  ConsultaRAGFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: consulta-rag-bedrock
+      CodeUri: ../src/
+      Handler: lambda.handler.lambda_handler
+      Description: Función Lambda para consultas RAG con AWS Bedrock
+      Architectures:
+        - x86_64
+      Policies:
+        - Statement:
+          - Sid: BedrockInvokePolicy
+            Effect: Allow
+            Action:
+              - bedrock:InvokeModel
+              - bedrock:InvokeModelWithResponseStream
+            Resource:
+              - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/*'
+          - Sid: BedrockListPolicy
+            Effect: Allow
+            Action:
+              - bedrock:ListFoundationModels
+            Resource: '*'
+      Events:
+        QueryAPI:
+          Type: Api
+          Properties:
+            Path: /query
+            Method: post
+            RestApiId: !Ref ConsultaRAGApi
+        HealthCheck:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: get
+            RestApiId: !Ref ConsultaRAGApi
+
+  ConsultaRAGApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: consulta-rag-api
+      StageName: prod
+      Cors:
+        AllowMethods: "'POST, GET, OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+      DefinitionBody:
+        openapi: 3.0.1
+        info:
+          title: Consulta RAG API
+          version: '1.0'
+        paths:
+          /query:
+            post:
+              summary: Realizar consulta RAG
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                        - prompt
+                      properties:
+                        prompt:
+                          type: string
+                          description: Pregunta o prompt para el modelo
+                        documents:
+                          type: array
+                          description: Lista de documentos procesados
+                          items:
+                            type: object
+                        max_tokens:
+                          type: integer
+                          default: 4096
+                        temperature:
+                          type: number
+                          default: 0.7
+              responses:
+                '200':
+                  description: Respuesta exitosa
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          response:
+                            type: string
+                          model_id:
+                            type: string
+                          input_tokens:
+                            type: integer
+                          output_tokens:
+                            type: integer
+              x-amazon-apigateway-integration:
+                type: aws_proxy
+                httpMethod: POST
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConsultaRAGFunction.Arn}/invocations'
+          /health:
+            get:
+              summary: Health check
+              responses:
+                '200':
+                  description: Servicio saludable
+              x-amazon-apigateway-integration:
+                type: aws_proxy
+                httpMethod: POST
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConsultaRAGFunction.Arn}/invocations'
+
+  ConsultaRAGLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${ConsultaRAGFunction}'
+      RetentionInDays: 7
+
+Outputs:
+  ConsultaRAGApi:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ConsultaRAGApi}.execute-api.${AWS::Region}.amazonaws.com/prod/query"
+  
+  ConsultaRAGFunction:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt ConsultaRAGFunction.Arn
+  
+  ConsultaRAGFunctionIamRole:
+    Description: "IAM Role for Lambda Function"
+    Value: !GetAtt ConsultaRAGFunctionRole.Arn

@@ -1,0 +1,25 @@
+{
+  "incident_id": "INC-2024-001",
+  "title": "Servidor web no responde",
+  "description": "El servidor web principal (web-prod-01) no responde a las peticiones HTTP. Los usuarios reportan error 503 Service Unavailable. El servidor está activo pero el servicio nginx no responde.",
+  "category": "Infrastructure",
+  "severity": "Critical",
+  "status": "Resolved",
+  "resolution": "Se reinició el servicio nginx después de identificar un problema de memoria. Se aumentó el límite de memoria del proceso de 2GB a 4GB para prevenir futuros problemas.",
+  "resolution_time": "45 minutos",
+  "root_cause": "Fuga de memoria en nginx causada por un módulo de terceros mal configurado",
+  "created_at": "2024-01-15T10:30:00Z",
+  "resolved_at": "2024-01-15T11:15:00Z",
+  "attachments_metadata": [
+    {
+      "filename": "INC-2024-001_screenshot.png",
+      "type": "image",
+      "description": "Captura de pantalla del error"
+    },
+    {
+      "filename": "INC-2024-001_logs.txt",
+      "type": "text",
+      "description": "Logs del sistema durante el incidente"
+    }
+  ]
+}

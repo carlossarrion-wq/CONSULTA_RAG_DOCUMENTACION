@@ -1,0 +1,7 @@
+=== Logs del incidente INC-2024-003 ===
+Timestamp: 2025-10-01T23:23:23.459402
+
+[ERROR] Service unavailable
+[WARN] High memory usage detected
+[INFO] Attempting restart
+[INFO] Service restarted successfully

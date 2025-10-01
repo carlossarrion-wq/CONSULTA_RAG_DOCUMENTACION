@@ -1,0 +1,25 @@
+{
+  "incident_id": "INC-2024-004",
+  "title": "Certificado SSL expirado",
+  "description": "El certificado SSL del dominio principal expiró. Los usuarios reciben advertencias de seguridad en el navegador. El tráfico HTTPS está siendo rechazado.",
+  "category": "Security",
+  "severity": "Critical",
+  "status": "Resolved",
+  "resolution": "Se renovó el certificado SSL usando Let's Encrypt. Se configuró renovación automática con certbot. Se implementó monitoreo de expiración de certificados con alertas 30 días antes.",
+  "resolution_time": "30 minutos",
+  "root_cause": "Falta de renovación automática de certificados SSL",
+  "created_at": "2024-02-10T08:00:00Z",
+  "resolved_at": "2024-02-10T08:30:00Z",
+  "attachments_metadata": [
+    {
+      "filename": "INC-2024-004_screenshot.png",
+      "type": "image",
+      "description": "Captura de pantalla del error"
+    },
+    {
+      "filename": "INC-2024-004_logs.txt",
+      "type": "text",
+      "description": "Logs del sistema durante el incidente"
+    }
+  ]
+}
