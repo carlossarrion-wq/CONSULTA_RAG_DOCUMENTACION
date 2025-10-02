@@ -160,6 +160,7 @@ Tu objetivo es:
 3. Eliminar información redundante o poco relevante
 4. Mantener los detalles técnicos importantes (códigos de error, componentes, síntomas)
 5. Generar una consulta concisa pero completa
+6. MANTENER COMPLETAMENTE EL IDIOMA ORIGINAL - si la consulta está en español, la respuesta debe estar 100% en español
 
 Aquí tienes algunos ejemplos de consultas optimizadas:
 
@@ -169,7 +170,7 @@ Aquí tienes algunos ejemplos de consultas optimizadas:
 El servidor de base de datos PostgreSQL está mostrando errores de conexión. Los usuarios reportan que no pueden acceder a la aplicación y reciben mensajes de timeout. El log muestra 'connection refused' repetidamente.
 </question>
 <generated_query>
-PostgreSQL error conexión timeout connection refused servidor base datos
+PostgreSQL servidor base datos errores conexión timeout rechazada usuarios sin acceso aplicación
 </generated_query>
 </example>
 
@@ -178,7 +179,7 @@ PostgreSQL error conexión timeout connection refused servidor base datos
 Tenemos un problema con el servidor de aplicaciones que está consumiendo mucha CPU, como el 95% constantemente. La aplicación se pone muy lenta y algunos procesos se quedan colgados. También vemos que la memoria va subiendo poco a poco.
 </question>
 <generated_query>
-servidor aplicaciones alto consumo CPU 95% rendimiento lento fuga memoria
+servidor aplicaciones alto consumo CPU 95% rendimiento lento procesos colgados fuga memoria
 </generated_query>
 </example>
 
@@ -187,12 +188,14 @@ servidor aplicaciones alto consumo CPU 95% rendimiento lento fuga memoria
 El servicio de autenticación OAuth falla a veces. Algunos usuarios pueden entrar bien pero otros reciben error 500. En los logs aparecen excepciones sobre tokens que han expirado.
 </question>
 <generated_query>
-OAuth autenticación fallo intermitente error 500 token expirado
+OAuth servicio autenticación fallo intermitente error 500 tokens expirados excepciones logs
 </generated_query>
 </example>
 </examples>
 
-IMPORTANTE: Los ejemplos anteriores son solo para ilustrar el formato. NO debes asumir que esa información está disponible para ti.
+IMPORTANTE: 
+- Los ejemplos anteriores son solo para ilustrar el formato. NO debes asumir que esa información está disponible para ti.
+- Debes mantener ESTRICTAMENTE el mismo idioma que la consulta original. Si está en español, responde en español. Si está en inglés, responde en inglés.
 
 Ahora, optimiza la siguiente consulta de incidencia:
 
@@ -200,7 +203,7 @@ Ahora, optimiza la siguiente consulta de incidencia:
 {query}
 </user_query>
 
-Responde ÚNICAMENTE con la consulta optimizada, sin explicaciones adicionales ni formato especial. La consulta debe estar en el mismo idioma que la consulta original."""
+Responde ÚNICAMENTE con la consulta optimizada, sin explicaciones adicionales ni formato especial."""
 
             # Construir mensaje para Claude
             body = {
