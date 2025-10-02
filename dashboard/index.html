@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Análisis de Incidencias</title>
+    <title>Análisis de Incidencias</title>
     
     <!-- AWS Amazon Ember Font -->
     <link rel="preconnect" href="https://d1tzzh0q3mh5bp.cloudfront.net">
@@ -625,7 +625,7 @@
     </div>
 
     <div class="header">
-        <h1>Dashboard de Análisis de Incidencias</h1>
+        <h1>Análisis de Incidencias</h1>
         <p>Sistema RAG con AWS Bedrock</p>
     </div>
 
@@ -715,6 +715,22 @@
         <!-- Results -->
         <div class="card results" id="results" style="position: relative;">
             <h2>Resultados del Análisis</h2>
+            
+            <!-- Query Optimization Section -->
+            <div class="result-section" id="queryOptimizationSection" style="display: none;">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                    </svg>
+                    Optimización de Consulta
+                </h3>
+                <div style="background: rgba(255, 255, 255, 0.8); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <p style="margin-bottom: 0.5rem; font-weight: 500; color: #718096; font-size: 0.9rem;">CONSULTA ORIGINAL:</p>
+                    <p id="originalQuery" style="color: #2d3748; font-size: 1rem; line-height: 1.5; margin-bottom: 1rem;"></p>
+                    <p style="margin-bottom: 0.5rem; font-weight: 500; color: #319795; font-size: 0.9rem;">CONSULTA OPTIMIZADA:</p>
+                    <p id="optimizedQuery" style="color: #2d3748; font-size: 1rem; font-weight: 500; line-height: 1.5; background: rgba(49, 151, 149, 0.1); padding: 0.75rem; border-radius: 6px; border-left: 3px solid #319795;"></p>
+                </div>
+            </div>
             
             <!-- Confidence Circle -->
             <div class="confidence-circle-container">
@@ -888,6 +904,15 @@
         }
 
         function displayResults(data) {
+            // Query Optimization Section
+            if (data.original_query && data.optimized_query) {
+                document.getElementById('originalQuery').textContent = data.original_query;
+                document.getElementById('optimizedQuery').textContent = data.optimized_query;
+                document.getElementById('queryOptimizationSection').style.display = 'block';
+            } else {
+                document.getElementById('queryOptimizationSection').style.display = 'none';
+            }
+            
             // Diagnosis
             document.getElementById('diagnosis').textContent = data.diagnosis;
             

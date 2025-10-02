@@ -90,6 +90,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "root_cause": response.root_cause,
             "recommended_actions": response.recommended_actions,
             "confidence_score": response.confidence_score,
+            "original_query": response.original_query,
+            "optimized_query": response.optimized_query,
             "similar_incidents": [
                 {
                     "incident_id": inc.incident_id,

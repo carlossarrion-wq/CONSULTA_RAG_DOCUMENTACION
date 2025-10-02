@@ -44,6 +44,8 @@ class IncidentAnalysisResponse:
     model_id: str
     input_tokens: int
     output_tokens: int
+    original_query: str = ""
+    optimized_query: str = ""
 
 
 class IncidentAnalyzer:
@@ -90,30 +92,38 @@ class IncidentAnalyzer:
         try:
             logger.info(f"Iniciando análisis de incidencia: {request.incident_id or 'nueva'}")
             
-            # 1. Buscar incidencias similares en la Knowledge Base
+            # 1. Normalizar/mejorar la consulta del usuario
+            optimized_query = self._optimize_query(request.incident_description)
+            logger.info(f"Consulta optimizada: {optimized_query}")
+            
+            # 2. Buscar incidencias similares en la Knowledge Base usando la consulta optimizada
             similar_incidents = self._search_similar_incidents(
-                request.incident_description,
+                optimized_query,
                 max_results=request.max_similar_incidents
             )
             
             logger.info(f"Encontradas {len(similar_incidents)} incidencias similares")
             
-            # 2. Recuperar archivos adjuntos de S3 si es necesario
+            # 3. Recuperar archivos adjuntos de S3 si es necesario
             if request.include_attachments:
                 for incident in similar_incidents:
                     incident.attachments = self._get_incident_attachments(incident.incident_id)
             
-            # 3. Construir contexto para Claude
+            # 4. Construir contexto para Claude
             context = self._build_analysis_context(request, similar_incidents)
             
-            # 4. Invocar Claude para análisis
+            # 5. Invocar Claude para análisis
             analysis_result = self._invoke_claude_analysis(context)
             
-            # 5. Parsear y estructurar respuesta
+            # 6. Parsear y estructurar respuesta
             response = self._parse_analysis_response(
                 analysis_result,
                 similar_incidents
             )
+            
+            # 7. Agregar consultas original y optimizada a la respuesta
+            response.original_query = request.incident_description
+            response.optimized_query = optimized_query
             
             logger.info(f"Análisis completado - Confianza: {response.confidence_score:.2f}")
             
@@ -122,6 +132,119 @@ class IncidentAnalyzer:
         except Exception as e:
             logger.error(f"Error analizando incidencia: {str(e)}", exc_info=True)
             raise
+    
+    def _optimize_query(self, user_query: str) -> str:
+        """
+        Optimiza la consulta del usuario antes de buscar en la Knowledge Base
+        
+        Args:
+            user_query: Consulta original del usuario
+            
+        Returns:
+            Consulta optimizada para búsqueda
+        """
+        try:
+            logger.info("Optimizando consulta del usuario...")
+            
+            # Prompt para optimización de consulta
+            optimization_prompt = """Eres un agente de creación de consultas para un sistema de análisis de incidencias técnicas. Se te proporcionará una descripción de una incidencia técnica, y tu tarea será determinar la consulta óptima que se debe usar para buscar incidencias similares en una base de conocimiento.
+
+Tu objetivo es:
+1. Extraer los conceptos técnicos clave de la descripción
+2. Normalizar términos técnicos a su forma estándar
+3. Eliminar información redundante o poco relevante
+4. Mantener los detalles técnicos importantes (códigos de error, componentes, síntomas)
+5. Generar una consulta concisa pero completa
+
+Aquí tienes algunos ejemplos de consultas optimizadas:
+
+<examples>
+<example>
+<question>
+El servidor de base de datos PostgreSQL está mostrando errores de conexión. Los usuarios reportan que no pueden acceder a la aplicación y reciben mensajes de timeout. El log muestra 'connection refused' repetidamente.
+</question>
+<generated_query>
+PostgreSQL connection refused timeout error database server
+</generated_query>
+</example>
+
+<example>
+<question>
+Tenemos un problema con el servidor de aplicaciones que está consumiendo mucha CPU, como el 95% constantemente. La aplicación se pone muy lenta y algunos procesos se quedan colgados. También vemos que la memoria va subiendo poco a poco.
+</question>
+<generated_query>
+application server high CPU 95% performance slow memory leak
+</generated_query>
+</example>
+
+<example>
+<question>
+El servicio de autenticación OAuth falla a veces. Algunos usuarios pueden entrar bien pero otros reciben error 500. En los logs aparecen excepciones sobre tokens que han expirado.
+</question>
+<generated_query>
+OAuth authentication service intermittent failure error 500 token expired
+</generated_query>
+</example>
+</examples>
+
+IMPORTANTE: Los ejemplos anteriores son solo para ilustrar el formato. NO debes asumir que esa información está disponible para ti.
+
+Ahora, optimiza la siguiente consulta de incidencia:
+
+<user_query>
+{query}
+</user_query>
+
+Responde ÚNICAMENTE con la consulta optimizada, sin explicaciones adicionales ni formato especial. La consulta debe estar en el mismo idioma que la consulta original."""
+
+            # Construir mensaje para Claude
+            body = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 500,
+                "temperature": 0.1,  # Temperatura muy baja para consistencia
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": optimization_prompt.format(query=user_query)
+                            }
+                        ]
+                    }
+                ]
+            }
+            
+            # Invocar modelo
+            response = self.bedrock_runtime.invoke_model(
+                modelId=self.model_id,
+                body=json.dumps(body)
+            )
+            
+            # Parsear respuesta
+            response_body = json.loads(response["body"].read())
+            
+            # Extraer texto optimizado
+            optimized_query = ""
+            for item in response_body.get("content", []):
+                if item.get("type") == "text":
+                    optimized_query += item.get("text", "")
+            
+            # Limpiar la respuesta (eliminar posibles marcadores de código o espacios extra)
+            optimized_query = optimized_query.strip()
+            
+            # Si la optimización falla o está vacía, usar la consulta original
+            if not optimized_query or len(optimized_query) < 10:
+                logger.warning("Optimización de consulta produjo resultado vacío, usando consulta original")
+                return user_query
+            
+            logger.info(f"Consulta optimizada exitosamente: '{optimized_query}'")
+            return optimized_query
+            
+        except Exception as e:
+            logger.error(f"Error optimizando consulta: {str(e)}")
+            logger.warning("Usando consulta original debido al error")
+            return user_query
     
     def _search_similar_incidents(
         self,
