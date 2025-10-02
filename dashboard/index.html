@@ -669,6 +669,16 @@
                         ></textarea>
                     </div>
 
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label style="display: flex; align-items: center; cursor: pointer; text-transform: none; font-size: 0.95rem; font-weight: 400;">
+                            <input type="checkbox" id="optimizeQuery" checked style="width: 18px; height: 18px; margin-right: 0.5rem; cursor: pointer;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 18px; height: 18px; margin-right: 0.5rem; color: #319795;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                            </svg>
+                            Optimizar consulta con IA antes de buscar (recomendado)
+                        </label>
+                    </div>
+
                     <div class="button-group">
                         <button class="btn-primary" onclick="analyzeIncident()" id="analyzeBtn">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
@@ -850,6 +860,7 @@
 
         async function analyzeIncident() {
             const description = document.getElementById('incidentDescription').value.trim();
+            const optimizeQuery = document.getElementById('optimizeQuery').checked;
             
             if (!description) {
                 showError('Por favor, ingresa una descripción de la incidencia.');
@@ -872,7 +883,8 @@
                         'x-api-key': API_CONFIG.apiKey
                     },
                     body: JSON.stringify({
-                        incident_description: description
+                        incident_description: description,
+                        optimize_query: optimizeQuery
                     })
                 });
 

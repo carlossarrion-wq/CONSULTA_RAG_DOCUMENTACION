@@ -19,6 +19,7 @@ class IncidentAnalysisRequest:
     incident_id: Optional[str] = None
     max_similar_incidents: int = 5
     include_attachments: bool = True
+    optimize_query: bool = True
 
 
 @dataclass
@@ -92,11 +93,15 @@ class IncidentAnalyzer:
         try:
             logger.info(f"Iniciando análisis de incidencia: {request.incident_id or 'nueva'}")
             
-            # 1. Normalizar/mejorar la consulta del usuario
-            optimized_query = self._optimize_query(request.incident_description)
-            logger.info(f"Consulta optimizada: {optimized_query}")
+            # 1. Normalizar/mejorar la consulta del usuario (si está habilitado)
+            if request.optimize_query:
+                optimized_query = self._optimize_query(request.incident_description)
+                logger.info(f"Consulta optimizada: {optimized_query}")
+            else:
+                optimized_query = request.incident_description
+                logger.info("Optimización de consulta deshabilitada, usando consulta original")
             
-            # 2. Buscar incidencias similares en la Knowledge Base usando la consulta optimizada
+            # 2. Buscar incidencias similares en la Knowledge Base usando la consulta (optimizada o no)
             similar_incidents = self._search_similar_incidents(
                 optimized_query,
                 max_results=request.max_similar_incidents
@@ -164,7 +169,7 @@ Aquí tienes algunos ejemplos de consultas optimizadas:
 El servidor de base de datos PostgreSQL está mostrando errores de conexión. Los usuarios reportan que no pueden acceder a la aplicación y reciben mensajes de timeout. El log muestra 'connection refused' repetidamente.
 </question>
 <generated_query>
-PostgreSQL connection refused timeout error database server
+PostgreSQL error conexión timeout connection refused servidor base datos
 </generated_query>
 </example>
 
@@ -173,7 +178,7 @@ PostgreSQL connection refused timeout error database server
 Tenemos un problema con el servidor de aplicaciones que está consumiendo mucha CPU, como el 95% constantemente. La aplicación se pone muy lenta y algunos procesos se quedan colgados. También vemos que la memoria va subiendo poco a poco.
 </question>
 <generated_query>
-application server high CPU 95% performance slow memory leak
+servidor aplicaciones alto consumo CPU 95% rendimiento lento fuga memoria
 </generated_query>
 </example>
 
@@ -182,7 +187,7 @@ application server high CPU 95% performance slow memory leak
 El servicio de autenticación OAuth falla a veces. Algunos usuarios pueden entrar bien pero otros reciben error 500. En los logs aparecen excepciones sobre tokens que han expirado.
 </question>
 <generated_query>
-OAuth authentication service intermittent failure error 500 token expired
+OAuth autenticación fallo intermitente error 500 token expirado
 </generated_query>
 </example>
 </examples>

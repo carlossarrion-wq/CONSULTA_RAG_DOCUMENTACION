@@ -68,7 +68,8 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             incident_description=body["incident_description"],
             incident_id=body.get("incident_id"),
             max_similar_incidents=body.get("max_similar_incidents", 5),
-            include_attachments=body.get("include_attachments", True)
+            include_attachments=body.get("include_attachments", True),
+            optimize_query=body.get("optimize_query", True)
         )
         
         logger.info(f"Analizando incidencia: {analysis_request.incident_id or 'nueva'}")
