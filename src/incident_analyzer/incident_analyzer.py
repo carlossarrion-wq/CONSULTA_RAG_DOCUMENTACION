@@ -429,10 +429,10 @@ Responde ÚNICAMENTE con la consulta optimizada, sin explicaciones adicionales n
 
 1. **DIAGNÓSTICO**: Un diagnóstico claro del problema basado en los patrones observados
 2. **CAUSA RAÍZ**: Identifica la causa raíz más probable del problema
-3. **ACCIONES RECOMENDADAS**: Lista de acciones concretas para resolver la incidencia (mínimo 3, máximo 7)
-   - Puedes usar HTML para formatear las acciones (negritas con <strong>, enlaces con <a>, código con <code>, etc.)
-   - Cada acción debe ser clara y accionable
-   - Puedes incluir comandos, URLs, o referencias técnicas formateadas
+3. **ACCIONES RECOMENDADAS**: Tabla HTML con acciones concretas para resolver la incidencia (mínimo 3, máximo 7 filas)
+   - Debe ser una tabla HTML completa con dos columnas: "Acción Recomendada" y "Descripción"
+   - Usa <strong>, <code>, <a href="">, etc. para formatear el contenido de las celdas
+   - Cada fila debe tener una acción clara y su descripción detallada
 4. **CONFIANZA**: Un score de confianza del análisis (0.0 a 1.0)
 
 Formato de respuesta (JSON):
@@ -440,21 +440,18 @@ Formato de respuesta (JSON):
 {{
   "diagnosis": "Diagnóstico detallado aquí",
   "root_cause": "Causa raíz identificada",
-  "recommended_actions": [
-    "Acción 1 con <strong>texto en negrita</strong> si es necesario",
-    "Acción 2 con <code>comando o código</code> si aplica",
-    "Acción 3 con <a href='https://docs.example.com'>enlace a documentación</a> si es útil"
-  ],
+  "recommended_actions": "<table style='width: 100%; border-collapse: collapse;'><thead><tr><th style='border: 1px solid #ddd; padding: 12px; background-color: #319795; color: white; text-align: left;'>Acción Recomendada</th><th style='border: 1px solid #ddd; padding: 12px; background-color: #319795; color: white; text-align: left;'>Descripción</th></tr></thead><tbody><tr><td style='border: 1px solid #ddd; padding: 12px;'><strong>Verificar servicio</strong></td><td style='border: 1px solid #ddd; padding: 12px;'>Ejecutar <code>systemctl status postgresql</code> para verificar el estado del servicio</td></tr><tr><td style='border: 1px solid #ddd; padding: 12px;'><strong>Revisar logs</strong></td><td style='border: 1px solid #ddd; padding: 12px;'>Analizar los logs en <code>/var/log/postgresql/</code> para identificar errores</td></tr></tbody></table>",
   "confidence_score": 0.85
 }}
 ```
 
 IMPORTANTE sobre las acciones recomendadas:
-- Puedes usar HTML básico para mejorar la presentación: <strong>, <em>, <code>, <a href="">, <br>
-- Los enlaces deben ser URLs reales y relevantes cuando sea posible
-- El código o comandos deben estar en etiquetas <code>
-- Mantén el HTML simple y válido
-- Si no necesitas HTML para una acción, usa texto plano normal
+- DEBE ser una tabla HTML completa (string), NO un array
+- Usa el estilo inline proporcionado en el ejemplo para mantener el formato consistente
+- La primera columna debe contener el nombre/título de la acción (puede usar <strong>)
+- La segunda columna debe contener la descripción detallada de la acción
+- Puedes usar <code> para comandos, <a href=""> para enlaces, <strong> para énfasis
+- Mantén el HTML bien formado y válido
 
 {context}
 
