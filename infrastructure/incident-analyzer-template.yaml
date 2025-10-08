@@ -311,6 +311,14 @@ Resources:
             Path: /analyze-incident
             Method: POST
             RestApiId: !Ref IncidentAnalyzerApi
+            Auth:
+              ApiKeyRequired: true
+        AnalyzeIncidentOptions:
+          Type: Api
+          Properties:
+            Path: /analyze-incident
+            Method: OPTIONS
+            RestApiId: !Ref IncidentAnalyzerApi
       Tags:
         Environment: !Ref Environment
   
@@ -332,6 +340,12 @@ Resources:
             Path: /health
             Method: GET
             RestApiId: !Ref IncidentAnalyzerApi
+        HealthCheckOptions:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: OPTIONS
+            RestApiId: !Ref IncidentAnalyzerApi
   
   # ============================================
   # API GATEWAY
@@ -347,8 +361,6 @@ Resources:
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-api-key'"
         AllowOrigin: "'*'"
         MaxAge: "'600'"
-      Auth:
-        ApiKeyRequired: true
       GatewayResponses:
         DEFAULT_4XX:
           ResponseParameters:

@@ -30,6 +30,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         Respuesta HTTP con el análisis
     """
     try:
+        # Manejar peticiones OPTIONS (CORS preflight)
+        http_method = event.get("httpMethod") or event.get("requestContext", {}).get("http", {}).get("method")
+        if http_method == "OPTIONS":
+            return create_cors_response()
+        
         logger.info("Iniciando análisis de incidencia")
         
         # Parsear el body del request
@@ -145,10 +150,30 @@ def create_response(status_code: int, body: Dict[str, Any]) -> Dict[str, Any]:
         "headers": {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Content-Type,Authorization",
-            "Access-Control-Allow-Methods": "POST, OPTIONS"
+            "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-api-key",
+            "Access-Control-Allow-Methods": "POST,GET,OPTIONS",
+            "Access-Control-Max-Age": "600"
         },
         "body": json.dumps(body, ensure_ascii=False, default=str)
+    }
+
+
+def create_cors_response() -> Dict[str, Any]:
+    """
+    Crea una respuesta CORS para peticiones OPTIONS (preflight)
+    
+    Returns:
+        Respuesta CORS formateada
+    """
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-api-key",
+            "Access-Control-Allow-Methods": "POST,GET,OPTIONS",
+            "Access-Control-Max-Age": "600"
+        },
+        "body": json.dumps({"message": "CORS preflight response"})
     }
 
 
@@ -163,6 +188,11 @@ def health_check_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     Returns:
         Respuesta de health check
     """
+    # Manejar peticiones OPTIONS (CORS preflight)
+    http_method = event.get("httpMethod") or event.get("requestContext", {}).get("http", {}).get("method")
+    if http_method == "OPTIONS":
+        return create_cors_response()
+    
     # Verificar configuración
     knowledge_base_id = os.getenv("KNOWLEDGE_BASE_ID")
     s3_bucket = os.getenv("S3_BUCKET")
