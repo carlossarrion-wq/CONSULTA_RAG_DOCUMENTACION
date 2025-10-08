@@ -17,9 +17,9 @@ class IncidentAnalysisRequest:
     """Solicitud de análisis de incidencia"""
     incident_description: str
     incident_id: Optional[str] = None
-    max_similar_incidents: int = 5
+    max_similar_incidents: int = 3
     include_attachments: bool = True
-    optimize_query: bool = True
+    optimize_query: bool = False
 
 
 @dataclass
@@ -104,7 +104,7 @@ class IncidentAnalyzer:
             # 2. Buscar incidencias similares en la Knowledge Base usando la consulta (optimizada o no)
             similar_incidents = self._search_similar_incidents(
                 optimized_query,
-                max_results=request.max_similar_incidents
+                max_results=min(request.max_similar_incidents, 3)  # Limitar a máximo 3 para mejor rendimiento
             )
             
             logger.info(f"Encontradas {len(similar_incidents)} incidencias similares")
@@ -381,13 +381,17 @@ Responde ÚNICAMENTE con la consulta optimizada, sin explicaciones adicionales n
             ])
             
             for i, incident in enumerate(similar_incidents, 1):
+                # Truncar descripciones largas para reducir tokens
+                description = incident.description[:500] + "..." if len(incident.description) > 500 else incident.description
+                resolution = incident.resolution[:500] + "..." if len(incident.resolution) > 500 else incident.resolution
+                
                 context_parts.extend([
                     f"### Incidencia Similar #{i}",
                     f"**ID:** {incident.incident_id}",
                     f"**Título:** {incident.title}",
                     f"**Similitud:** {incident.similarity_score:.1%}",
-                    f"**Descripción:** {incident.description}",
-                    f"**Resolución:** {incident.resolution}",
+                    f"**Descripción:** {description}",
+                    f"**Resolución:** {resolution}",
                     ""
                 ])
                 
@@ -449,7 +453,7 @@ Proporciona tu análisis en formato JSON como se especifica arriba."""
             # Construir mensaje para Claude
             body = {
                 "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 4096,
+                "max_tokens": 2048,  # Reducido de 4096 para mejor rendimiento
                 "temperature": 0.3,  # Temperatura baja para análisis más determinista
                 "messages": [
                     {

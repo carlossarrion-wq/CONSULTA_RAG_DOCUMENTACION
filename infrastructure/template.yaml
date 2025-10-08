@@ -12,7 +12,6 @@ Globals:
     Runtime: python3.11
     Environment:
       Variables:
-        AWS_REGION: eu-west-1
         BEDROCK_MODEL_ID: eu.anthropic.claude-sonnet-4-5-20250929-v1:0
         BEDROCK_MAX_TOKENS: 4096
         BEDROCK_TEMPERATURE: 0.7
