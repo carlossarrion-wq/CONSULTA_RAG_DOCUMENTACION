@@ -931,14 +931,29 @@
             // Root Cause
             document.getElementById('rootCause').textContent = data.root_cause;
             
-            // Actions
+            // Actions - Render as HTML
             const actionsList = document.getElementById('actions');
             actionsList.innerHTML = '';
-            data.recommended_actions.forEach(action => {
-                const li = document.createElement('li');
-                li.textContent = action;
-                actionsList.appendChild(li);
-            });
+            
+            // Check if recommended_actions is a string (HTML) or array
+            if (typeof data.recommended_actions === 'string') {
+                // If it's a string, render it as HTML directly
+                actionsList.innerHTML = data.recommended_actions;
+            } else if (Array.isArray(data.recommended_actions)) {
+                // If it's an array, check if items contain HTML
+                data.recommended_actions.forEach(action => {
+                    const li = document.createElement('li');
+                    // Check if action contains HTML tags
+                    if (/<[a-z][\s\S]*>/i.test(action)) {
+                        // Render as HTML
+                        li.innerHTML = action;
+                    } else {
+                        // Render as plain text
+                        li.textContent = action;
+                    }
+                    actionsList.appendChild(li);
+                });
+            }
             
             // Confidence Circle
             const confidencePercent = Math.round(data.confidence_score * 100);

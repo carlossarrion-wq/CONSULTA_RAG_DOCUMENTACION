@@ -430,6 +430,9 @@ Responde ÚNICAMENTE con la consulta optimizada, sin explicaciones adicionales n
 1. **DIAGNÓSTICO**: Un diagnóstico claro del problema basado en los patrones observados
 2. **CAUSA RAÍZ**: Identifica la causa raíz más probable del problema
 3. **ACCIONES RECOMENDADAS**: Lista de acciones concretas para resolver la incidencia (mínimo 3, máximo 7)
+   - Puedes usar HTML para formatear las acciones (negritas con <strong>, enlaces con <a>, código con <code>, etc.)
+   - Cada acción debe ser clara y accionable
+   - Puedes incluir comandos, URLs, o referencias técnicas formateadas
 4. **CONFIANZA**: Un score de confianza del análisis (0.0 a 1.0)
 
 Formato de respuesta (JSON):
@@ -438,13 +441,20 @@ Formato de respuesta (JSON):
   "diagnosis": "Diagnóstico detallado aquí",
   "root_cause": "Causa raíz identificada",
   "recommended_actions": [
-    "Acción 1",
-    "Acción 2",
-    "Acción 3"
+    "Acción 1 con <strong>texto en negrita</strong> si es necesario",
+    "Acción 2 con <code>comando o código</code> si aplica",
+    "Acción 3 con <a href='https://docs.example.com'>enlace a documentación</a> si es útil"
   ],
   "confidence_score": 0.85
 }}
 ```
+
+IMPORTANTE sobre las acciones recomendadas:
+- Puedes usar HTML básico para mejorar la presentación: <strong>, <em>, <code>, <a href="">, <br>
+- Los enlaces deben ser URLs reales y relevantes cuando sea posible
+- El código o comandos deben estar en etiquetas <code>
+- Mantén el HTML simple y válido
+- Si no necesitas HTML para una acción, usa texto plano normal
 
 {context}
 
